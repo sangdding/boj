@@ -14,18 +14,19 @@ public:
     int x, y, age;
 
     Tree(int x, int y, int age) : x(x), y(y), age(age) {}
+
+    bool operator<(const Tree &t) const
+    {
+        return this->age > t.age;
+    }
 };
 
 static int A[10][100];
 static int nutrient[10][100];
-static int N, M, K, tree;
-static vector<Tree> V;
+static int N, M, K;
+static queue<Tree> born;
+static priority_queue<Tree> pq;
 static queue<Tree> dead;
-
-bool compare(const Tree &t1, const Tree &t2)
-{
-    return t1.age > t2.age;
-}
 
 void spring()
 {
@@ -35,25 +36,26 @@ void spring()
     하나의 칸에 여러 개의 나무가 있다면, 나이가 어린 나무부터 양분을 먹는다.
     만약, 땅에 양분이 부족해 자신의 나이만큼 양분을 먹을 수 없는 나무는 양분을 먹지 못하고 즉시 죽는다.
     */
-    int cnt = tree;
-    while (cnt > 0)
+    priority_queue<Tree> temp;
+    while (!pq.empty())
     {
-        Tree t = V.front();
-        V.erase(V.begin());
+        Tree t = pq.top();
+        pq.pop();
         if (nutrient[t.x - 1][t.y - 1] >= t.age)
         {
-
-            V.push_back(Tree(t.x, t.y, t.age + 1));
+            if ((t.age + 1) % 5 == 0)
+            {
+                born.push(Tree(t.x, t.y, t.age + 1));
+            }
+            temp.push(Tree(t.x, t.y, t.age + 1));
             nutrient[t.x - 1][t.y - 1] -= t.age;
         }
-
         else
         {
             dead.push(t);
-            tree--;
         }
-        cnt--;
     }
+    pq = temp;
 }
 
 void summer()
@@ -79,25 +81,18 @@ void fall()
     어떤 칸 (r, c)와 인접한 칸은 (r-1, c-1), (r-1, c), (r-1, c+1), (r, c-1), (r, c+1), (r+1, c-1), (r+1, c), (r+1, c+1) 이다.
     상도의 땅을 벗어나는 칸에는 나무가 생기지 않는다.
     */
-    int cnt = 0;
-    int temp_tree = tree;
-    while (cnt < temp_tree)
+    while (!born.empty())
     {
-        Tree t = V[cnt];
-        if (t.age % 5 == 0)
+        Tree t = born.front();
+        born.pop();
+        for (int i = 0; i < 8; i++)
         {
-            for (int i = 0; i < 8; i++)
-            {
-                int nx = t.x + dx[i];
-                int ny = t.y + dy[i];
-
-                if (nx < 0 || nx >= N || ny < 0 || ny >= N)
-                    continue;
-                V.push_back(Tree(nx, ny, 1));
-                tree++;
-            }
+            int nx = t.x + dx[i];
+            int ny = t.y + dy[i];
+            if (nx < 1 || nx > N || ny < 1 || ny > N)
+                continue;
+            pq.push(Tree(nx, ny, 1));
         }
-        cnt++;
     }
 }
 
@@ -115,7 +110,6 @@ void winter()
 int main()
 {
     cin >> N >> M >> K;
-    tree = M;
     for (int i = 0; i < N; i++)
     {
         for (int j = 0; j < N; j++)
@@ -129,13 +123,12 @@ int main()
     {
         int x, y, z;
         cin >> x >> y >> z;
-        V.push_back(Tree(x, y, z));
+        pq.push(Tree(x, y, z));
     }
 
     int year = 0;
     while (year < K)
     {
-        sort(V.begin(), V.end(), compare);
         spring();
         summer();
         fall();
@@ -143,6 +136,6 @@ int main()
         year++;
     }
 
-    cout << tree << endl;
+    cout << pq.size() << endl;
     return 0;
 }
